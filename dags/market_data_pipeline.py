@@ -55,33 +55,33 @@ def _ensure_db():
         conn.commit()
 
 
-def _fetch_recent(ticker: str, minutes: int) -> pd.DataFrame:
-    df = yf.download(ticker, period="1d", interval="1m", progress=False)
+def _fetch_recent(ticker: str, lookback_minutes: int) -> pd.DataFrame:
+    import yfinance as yf
+    import pandas as pd
 
-    # Case 1: MultiIndex (older yfinance)
+    df = yf.download(
+        ticker,
+        period="1d",
+        interval="1m",
+        progress=False,
+    )
+
+    if df.empty:
+        return pd.DataFrame(columns=["open", "high", "low", "close", "volume"])
+
+    # Handle multi-index columns (Price / Ticker)
     if isinstance(df.columns, pd.MultiIndex):
-        df.columns = [c[1].lower() if c[1] else c[0].lower() for c in df.columns]
+        df.columns = df.columns.get_level_values(0)  # drop "Ticker" level, keep Price
+    df.columns = [c.lower() for c in df.columns]
 
-    # Case 2: New style where every column == ticker
-    elif len(df.columns) == 5 and all(str(c).upper() == ticker.upper() for c in df.columns):
-        df.columns = ["open", "high", "low", "close", "volume"]
-
-    # Case 3: Already clean
-    else:
-        df.columns = [c.lower() for c in df.columns]
-
-    print(f"[DEBUG] {ticker} normalized columns: {df.columns.tolist()}")
-
-    # Only keep last X minutes
-    cutoff = datetime.now(timezone.utc) - timedelta(minutes=minutes)
+    # Filter recent window
+    cutoff = pd.Timestamp.utcnow() - pd.Timedelta(minutes=lookback_minutes)
     df = df[df.index >= cutoff]
 
-    expected_cols = ["open", "high", "low", "close", "volume"]
-    for col in expected_cols:
-        if col not in df.columns:
-            df[col] = 0.0  # fill missing
+    return df[["open", "high", "low", "close", "volume"]] if not df.empty else pd.DataFrame(
+        columns=["open", "high", "low", "close", "volume"]
+    )
 
-    return df[expected_cols] if not df.empty else pd.DataFrame(columns=expected_cols)
 
 
 
