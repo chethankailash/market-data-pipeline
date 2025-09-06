@@ -1,16 +1,39 @@
-# Real-Time Market Data Pipeline
+# 📊 Market Data Pipeline & Dashboard
 
-A demo project by CK using **Apache Airflow** + **Streamlit**.
+An **end-to-end data pipeline** that ingests crypto & stock candlestick data with **Apache Airflow**, stores it in **SQLite**, and visualizes it in an interactive **Streamlit dashboard**.
 
-## Features
-- Fetches 1-minute candles for AAPL, MSFT, TSLA, BTC-USD via yfinance
-- Stores into SQLite
-- Airflow DAG runs every 5 minutes
-- Streamlit dashboard shows live charts
+---
 
-## Setup
+## 🚀 Features
+- **Airflow DAG**: fetches OHLCV data (BTC-USD, ETH-USD, SOL-USD, AAPL, MSFT) via yfinance → stores in `data/market_data.db`.
+- **Streamlit Dashboard**: 
+  - Candlestick & volume charts  
+  - Ticker dropdown + candle count slider  
+  - Stats panel (latest price, % change, volatility, moving averages)  
+- **Extensible**: add more tickers easily in the DAG, dashboard auto-detects.
 
-### 1. Create venv
+---
+
+## ⚙️ Setup
+
+### Local (Airflow + Streamlit)
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+git clone https://github.com/<your-username>/market-data-pipeline.git
+cd market-data-pipeline
+pip install -r requirements.txt
+
+# Run Airflow
+export AIRFLOW_HOME=~/airflow
+airflow db init
+airflow dags test market_data_pipeline $(date +%Y-%m-%d)
+
+# Run Streamlit dashboard
+cd dashboard
+streamlit run app.py
+
+## Future Ideas
+
+- Add more tickers / assets  
+- Switch to PostgreSQL for production  
+- Alerts when thresholds are crossed  
+- Deploy Airflow on Kubernetes  
